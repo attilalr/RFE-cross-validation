@@ -14,21 +14,6 @@ from sklearn.model_selection import KFold, check_cv, cross_val_score
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 
-n_samples = 600
-n_features = 12
-
-rng = np.random.RandomState(0)
-
-X, y = make_regression(n_samples, n_features, random_state=rng)
-
-regr = LinearRegression()
-
-vars_names = [f'var {x}' for x in range(n_features)]
-df = pd.DataFrame(data=X, columns=vars_names)
-df['y'] = y
-
-rfe_cv(df, vars_names, 'y', regr, cv=5)
-
 def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False):
 
     assert isinstance(df, pd.DataFrame), 'df must be pandas dataframe'
@@ -90,8 +75,8 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False):
         color='b'
     )
 
-    #ax1.legend()
-    ax1.set_xticks(np.arange(len(v_rank_mean)), vars_x)#, labelrotation=-30)
+    ax1.set_xticks(np.arange(len(v_rank_mean)))
+    ax1.set_xticklabels(vars_x, rotation=-40)
 
     ax1.set_title(f'mean ranking for each feature when modeling {var_y}')
 
@@ -180,3 +165,18 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False):
     ax2.set_xlabel('number of best features')
     #ax2.legend()
     fig2.show()
+
+n_samples = 600
+n_features = 12
+
+rng = np.random.RandomState(0)
+
+X, y = make_regression(n_samples, n_features, random_state=rng)
+
+regr = LinearRegression()
+
+vars_names = [f'var {x}' for x in range(n_features)]
+df = pd.DataFrame(data=X, columns=vars_names)
+df['y'] = y
+
+rfe_cv(df, vars_names, 'y', regr, cv=5)
