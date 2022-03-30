@@ -22,4 +22,5 @@ TO-DO:
 - Richer example.
 
 [1] http://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.RFECV.html
+
 [2] https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.RFE.html
