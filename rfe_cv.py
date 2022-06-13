@@ -166,17 +166,19 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False):
     #ax2.legend()
     fig2.show()
 
-n_samples = 600
-n_features = 12
+    
+if __name__ == "__main__":    
+    n_samples = 600
+    n_features = 12
 
-rng = np.random.RandomState(0)
+    rng = np.random.RandomState(0)
 
-X, y = make_regression(n_samples, n_features, random_state=rng)
+    X, y = make_regression(n_samples, n_features, random_state=rng)
 
-regr = LinearRegression()
+    regr = LinearRegression()
 
-vars_names = [f'var {x}' for x in range(n_features)]
-df = pd.DataFrame(data=X, columns=vars_names)
-df['y'] = y
+    vars_names = [f'var {x}' for x in range(n_features)]
+    df = pd.DataFrame(data=X, columns=vars_names)
+    df['y'] = y
 
-rfe_cv(df, vars_names, 'y', regr, cv=5)
+    rfe_cv(df, vars_names, 'y', regr, cv=5)
