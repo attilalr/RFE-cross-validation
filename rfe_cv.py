@@ -12,9 +12,9 @@ from sklearn.base import is_classifier
 from sklearn.model_selection import KFold, check_cv, cross_val_score
 
 from sklearn.datasets import make_regression
-from sklearn.linear_model import LinearRegression
 
-def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False):
+
+def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False, figsize=(8,4)):
 
     assert isinstance(df, pd.DataFrame), 'df must be pandas dataframe'
 
@@ -35,8 +35,8 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False):
             X_train = df[vars_x].values[train_index].reshape(-1, 1).copy()
             X_test = df[vars_x].values[test_index].reshape(-1, 1).copy()
         else:
-            X_train = df[vars_x].values[train_index].copy() # fazer uma copia aqui porque a ideia é poder alterar X_train nessa iteração
-            X_test = df[vars_x].values[test_index].copy()
+            X_train = df[vars_x].values[train_index].copy() # copy of X_train because we are gonna change it
+            X_test = df[vars_x].values[test_index].copy() # the same
 
         y_train = df[var_y].values[train_index] 
         y_test = df[var_y].values[test_index]
@@ -57,10 +57,8 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False):
     
     ################### END CV ###
 
-    # figura nova com o ranking medio de cada feature
-    fig1, ax1 = plt.subplots()
-    #ax.plot(x, y)
-    #ax.set_title('A single plot')
+    # mean rank figure
+    fig1, ax1 = plt.subplots(figsize=figsize)
 
     v_rank_mean = np.mean(model['features_ranking'], axis=1).ravel()
     v_rank_std = np.mean(model['features_ranking'], axis=1).ravel()
@@ -80,14 +78,14 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False):
 
     ax1.set_title(f'mean ranking for each feature when modeling {var_y}')
 
-    fig1.show()
+    plt.show()
 
 
 
 
 
-    # esse laço i vai pegar as i melhores features e fazer a cross validaçao
-    # pra simplificar vou usar o cross_val_score 
+    # in this loop we are gonna evaluate a score using the i+1 best features
+    # using cross_val_score to evaluate
     for i in range(len(vars_x)):
 
         # rotina pra pegar a n variáveis mais importantes
@@ -97,8 +95,8 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False):
 
         v = np.sum(model['features_ranking'], axis=1).ravel()
 
-        # malandragem master
-        v = v + np.random.random(v.size)/10
+        # very dirty trick here, to eliminate tied results
+        v = v + np.random.random(v.size)/100
 
         v_sorted = sorted(list(v))
         v_temp_max = v_sorted[n_best_features-1]
@@ -128,15 +126,13 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False):
         # ou pra permanecer com o dataframe
         
         selected_col_names = np.array(vars_x)[mask_n_best_features]
-        #df[selected_col_names]
         print (f'{i+1} selected features: {selected_col_names}')
 
         kfold = check_cv(cv=cv, y=df[var_y], classifier=is_classifier(estimator))
 
-        # cross validação pra pegar o escore r2
+        # cross-validated score
         r2_vec = cross_val_score(
             estimator, 
-            #(df[selected_col_names] - df[selected_col_names].mean())/df[selected_col_names].std(), 
             df[selected_col_names],
             df[var_y],
             scoring='r2',
@@ -146,7 +142,7 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False):
         model['scores_mean'].append(r2_vec.mean())
         model['scores_std'].append(r2_vec.std())
 
-    fig2, ax2 = plt.subplots()
+    fig2, ax2 = plt.subplots(figsize=figsize)
 
     ax2.plot(np.arange(len(model['scores_mean']))+1, model['scores_mean'], 'o-')
 
@@ -164,21 +160,17 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False):
     ax2.set_ylabel('$R^2$')
     ax2.set_xlabel('number of best features')
     #ax2.legend()
-    fig2.show()
+    plt.show()
 
-    
-if __name__ == "__main__":    
-    n_samples = 600
-    n_features = 12
 
-    rng = np.random.RandomState(0)
-
-    X, y = make_regression(n_samples, n_features, random_state=rng)
-
-    regr = LinearRegression()
-
-    vars_names = [f'var {x}' for x in range(n_features)]
-    df = pd.DataFrame(data=X, columns=vars_names)
-    df['y'] = y
-
-    rfe_cv(df, vars_names, 'y', regr, cv=5)
+if __name__ == "__main__":
+  print (''' - Module rfe-cv -
+  
+ Use:
+ import rfe_cv
+ and call rfe_cv.rfe_cv()
+ 
+                 or
+ from rfe_cv import rfe_cv 
+ and call rfe_cv()
+        ''')
