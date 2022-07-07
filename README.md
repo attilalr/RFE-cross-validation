@@ -12,10 +12,10 @@ Figure: Mean rank across folds for each feature.
 
 TO-DO:
 
-- Separate module file and example script;
+- ~~Separate module file and example script;~~
 - Prettier output or returning of results;
-- Input parameters for figures;
-- Get rid of commentaries in portuguese;
+- Input parameters for figures (done for figsize);
+- Get rid of commentaries in portuguese (on the way);
 - Return of figures instead of plotting;
 - Better check of inputs (types);
 - Consider the variability of the std deviation of the mean;
