@@ -1,7 +1,7 @@
 # RFE-cross-validation
 RFE (Recursive Feature Elimination) with cross validation
 
-RFECV from scikit-learn optimizes the number of best features [1] but is usual the desire to know the selected variables for other cases. The RFE function addresses this issue but is it not cross-validated.
+RFECV from scikit-learn optimizes the number of best features [1] but is usual the desire to know the selected variables for other cases. The RFE function [2] addresses this issue but is it not cross-validated.
 
 A cross-validation for feature importance can give the idea of how a given feature is well established in the feature importance rank. The rank variability is shown by the standard deviation of the rank mean. As the next figure shows: 
 
