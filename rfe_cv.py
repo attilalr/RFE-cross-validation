@@ -67,7 +67,7 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False, figsize=(8,4))
 
     ax1.fill_between(
         np.arange(len(v_rank_mean)),
-        v_rank_mean + v_rank_std/np.sqrt(n_splits),
+        v_rank_mean + v_rank_std/np.sqrt(n_splits), # stddev of mean as s/sqrt(n) is not right, the true value is higher
         v_rank_mean - v_rank_std/np.sqrt(n_splits),
         alpha=0.1,
         color='b'
