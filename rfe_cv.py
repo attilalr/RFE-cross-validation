@@ -4,6 +4,8 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
+from scipy.stats import t
+
 from sklearn.preprocessing import StandardScaler
 
 from sklearn.feature_selection import RFE
@@ -57,6 +59,10 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False, figsize=(8,4))
     
     ################### END CV ###
 
+    alpha = 0.3173 # for 1 stddev 68,37% CI
+    degrees_of_freedom = n_splits - 1
+    
+
     # mean rank figure
     fig1, ax1 = plt.subplots(figsize=figsize)
 
@@ -67,8 +73,8 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False, figsize=(8,4))
 
     ax1.fill_between(
         np.arange(len(v_rank_mean)),
-        v_rank_mean + v_rank_std/np.sqrt(n_splits), # stddev of mean as s/sqrt(n) is not right, the true value is higher
-        v_rank_mean - v_rank_std/np.sqrt(n_splits),
+        v_rank_mean + t.ppf(1-alpha/2, degrees_of_freedom)*v_rank_std/np.sqrt(n_splits), # stddev correction using student-t
+        v_rank_mean - t.ppf(1-alpha/2, degrees_of_freedom)*v_rank_std/np.sqrt(n_splits),
         alpha=0.1,
         color='b'
     )
@@ -148,8 +154,8 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False, figsize=(8,4))
 
     ax2.fill_between(
         np.arange(len(model['scores_mean']))+1,
-        model['scores_mean'] + np.array(model['scores_std'])/np.sqrt(n_splits),
-        model['scores_mean'] - np.array(model['scores_std'])/np.sqrt(n_splits),
+        model['scores_mean'] + t.ppf(1-alpha/2, degrees_of_freedom)*np.array(model['scores_std'])/np.sqrt(n_splits),
+        model['scores_mean'] - t.ppf(1-alpha/2, degrees_of_freedom)*np.array(model['scores_std'])/np.sqrt(n_splits),
         alpha=0.1,
         color='b'
     )
