@@ -44,7 +44,12 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, scoring='accuracy', std_scaling=F
 
     ################### START CV ###
 
-    for i, (train_index, test_index) in enumerate(kfold.split(df)):
+    if is_classifier(estimator):
+        y_ = df[var_y]
+    else:
+        y_ = None
+
+    for i, (train_index, test_index) in enumerate(kfold.split(df, y=y_)):
 
         if len(vars_x) == 1:
             X_train = df[vars_x].values[train_index].reshape(-1, 1).copy()
