@@ -24,6 +24,8 @@ def main():
   df = pd.DataFrame(data=X, columns=vars_names)
   df['y'] = y
 
+  # the scoring parameter is used in the scoring X no. of best features.
+  # the RFE phase is performed using sklearn's RFE.
   rfe_cv(df, vars_names, 'y', regr, 
          cv=5,
          scoring='r2', 
