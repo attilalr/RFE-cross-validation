@@ -6,19 +6,32 @@ import matplotlib.pyplot as plt
 
 from scipy.stats import t
 
+from sklearn.datasets import make_regression
 from sklearn.preprocessing import StandardScaler
 
-from sklearn.feature_selection import RFE
-
 from sklearn.base import is_classifier
+from sklearn.metrics import check_scoring, make_scorer
+
+from sklearn.feature_selection import RFE
 from sklearn.model_selection import KFold, check_cv, cross_val_score
 
-from sklearn.datasets import make_regression
 
-
-def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False, figsize=(8,4)):
+def rfe_cv(df, vars_x, var_y, estimator, cv=5, scoring='accuracy', std_scaling=False, figsize=(8,4)):
 
     assert isinstance(df, pd.DataFrame), 'df must be pandas dataframe'
+
+    # this error catch is ugly but I did not found a score <--> estimator check function yet
+    try:
+      score_vec = cross_val_score(
+          estimator, 
+          df[vars_x],
+          df[var_y],
+          scoring=scoring,
+          cv=2,
+      )
+    except:
+      raise ValueError('Error. Check if the scoring matches the estimator Regression/Classification case.')
+
 
     kfold = check_cv(cv=cv, y=df[var_y], classifier=is_classifier(estimator))
     n_splits = kfold.n_splits
@@ -137,16 +150,16 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False, figsize=(8,4))
         kfold = check_cv(cv=cv, y=df[var_y], classifier=is_classifier(estimator))
 
         # cross-validated score
-        r2_vec = cross_val_score(
+        score_vec = cross_val_score(
             estimator, 
             df[selected_col_names],
             df[var_y],
-            scoring='r2',
+            scoring=scoring,
             cv=kfold,
         )
 
-        model['scores_mean'].append(r2_vec.mean())
-        model['scores_std'].append(r2_vec.std())
+        model['scores_mean'].append(score_vec.mean())
+        model['scores_std'].append(score_vec.std())
 
     fig2, ax2 = plt.subplots(figsize=figsize)
 
@@ -163,7 +176,7 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, std_scaling=False, figsize=(8,4))
 
     ax2.locator_params(axis='x', nbins=len(model['scores_mean']))
     ax2.set_title(f'modeling {var_y}')
-    ax2.set_ylabel('$R^2$')
+    ax2.set_ylabel(str(scoring))
     ax2.set_xlabel('number of best features')
     #ax2.legend()
     plt.show()
