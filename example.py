@@ -41,14 +41,16 @@ def main():
                              random_state=rng,
                              )
 
+  vars_names = [f'var {x}' for x in range(n_features)]
+  df = pd.DataFrame(data=X, columns=vars_names)
+  df['y'] = y
+
+
   clf = RandomForestClassifier(max_depth=2, 
                                n_estimators=40, 
                                random_state=rng,
                                )
 
-  vars_names = [f'var {x}' for x in range(n_features)]
-  df = pd.DataFrame(data=X, columns=vars_names)
-  df['y'] = y
 
   rfe_cv(df, vars_names, 'y', clf, 
          cv=5,
@@ -56,6 +58,35 @@ def main():
          figsize=(7, 4),
          )
 
+
+
+
+  # Two models in the same figure
+  clf = RandomForestClassifier(max_depth=2, 
+                               n_estimators=40, 
+                               random_state=rng,
+                               )
+
+  fig1, fig2 = rfe_cv(df, vars_names, 'y', clf, 
+         cv = 5,
+         scoring = 'accuracy', 
+         figsize = (7, 4),
+         return_fig = True,
+         model_label = 'RF1',
+         )
+         
+  clf = RandomForestClassifier(max_depth=None, 
+                               n_estimators=10, 
+                               random_state=rng,
+                               )
+  rfe_cv(df, vars_names, 'y', clf, 
+         cv = 5,
+         scoring = 'accuracy', 
+         return_fig = False,
+         figs = [fig1, fig2],
+         model_label = 'RF2',
+         )
+         
 
 
 if __name__ == "__main__":

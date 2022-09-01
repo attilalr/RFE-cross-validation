@@ -16,9 +16,17 @@ from sklearn.feature_selection import RFE
 from sklearn.model_selection import KFold, check_cv, cross_val_score
 
 
-def rfe_cv(df, vars_x, var_y, estimator, cv=5, scoring='accuracy', std_scaling=False, figsize=(8,4)):
+def rfe_cv(df, vars_x, var_y, estimator, cv=5, scoring='accuracy', std_scaling=False, 
+           figs=None, return_fig=False, figsize=(8,4),
+           model_label=None):
 
     assert isinstance(df, pd.DataFrame), 'df must be pandas dataframe'
+
+    if figs != None:
+      fig1 = figs[0]
+      fig2 = figs[1]
+      ax1 = fig1.axes[0]
+      ax2 = fig2.axes[0]
 
     # this error catch is ugly but I did not found a score <--> estimator check function yet
     try:
@@ -82,12 +90,13 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, scoring='accuracy', std_scaling=F
     
 
     # mean rank figure
-    fig1, ax1 = plt.subplots(figsize=figsize)
+    if figs == None:
+      fig1, ax1 = plt.subplots(figsize=figsize)
 
     v_rank_mean = np.mean(model['features_ranking'], axis=1).ravel()
     v_rank_std = np.mean(model['features_ranking'], axis=1).ravel()
 
-    ax1.plot(v_rank_mean, 'o-')
+    ax1.plot(v_rank_mean, 'o-', label=model_label)
 
     ax1.fill_between(
         np.arange(len(v_rank_mean)),
@@ -102,7 +111,9 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, scoring='accuracy', std_scaling=F
 
     ax1.set_title(f'mean ranking for each feature when modeling {var_y}')
 
-    plt.show()
+    if return_fig == False:
+      fig1.legend()
+      fig1.show()
 
 
 
@@ -166,9 +177,10 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, scoring='accuracy', std_scaling=F
         model['scores_mean'].append(score_vec.mean())
         model['scores_std'].append(score_vec.std())
 
-    fig2, ax2 = plt.subplots(figsize=figsize)
+    if figs == None:
+      fig2, ax2 = plt.subplots(figsize=figsize)
 
-    ax2.plot(np.arange(len(model['scores_mean']))+1, model['scores_mean'], 'o-')
+    ax2.plot(np.arange(len(model['scores_mean']))+1, model['scores_mean'], 'o-', label=model_label)
 
     ax2.fill_between(
         np.arange(len(model['scores_mean']))+1,
@@ -184,7 +196,13 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, scoring='accuracy', std_scaling=F
     ax2.set_ylabel(str(scoring))
     ax2.set_xlabel('number of best features')
     #ax2.legend()
-    plt.show()
+
+    if return_fig == False:
+      fig2.legend()
+      fig2.show()
+
+    if return_fig:      
+      return fig1, fig2
 
 
 if __name__ == "__main__":
