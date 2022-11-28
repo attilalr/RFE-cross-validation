@@ -8,7 +8,7 @@ from rfe_cv import rfe_cv
 
 def main():
   n_samples = 200
-  n_features = 4
+  n_features = 6
 
   rng = np.random.RandomState(0)
 
@@ -87,6 +87,15 @@ def main():
          model_label = 'RF2',
          )
          
+
+  # if I dont want all features
+  rfe_cv(df, vars_names, 'y', clf, 
+         cv = 5,
+         scoring = 'accuracy', 
+         max_features = 3,
+         model_label = 'RF2a',
+         return_fig = False,
+         )
 
 
 if __name__ == "__main__":

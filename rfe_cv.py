@@ -16,7 +16,7 @@ from sklearn.feature_selection import RFE
 from sklearn.model_selection import KFold, check_cv, cross_val_score
 
 
-def rfe_cv(df, vars_x, var_y, estimator, cv=5, scoring='accuracy', std_scaling=False, 
+def rfe_cv(df, vars_x, var_y, estimator, cv=5, max_features=None, scoring='accuracy', std_scaling=False, 
            figs=None, return_fig=False, figsize=(8,4),
            model_label=None):
 
@@ -121,7 +121,13 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, scoring='accuracy', std_scaling=F
 
     # in this loop we are gonna evaluate a score using the i+1 best features
     # using cross_val_score to evaluate
-    for i in range(len(vars_x)):
+    
+    n_features = len(vars_x)
+    if not max_features:
+        max_features = n_features
+    
+    
+    for i in range(min(max_features, n_features)):
 
         # rotina pra pegar a n variáveis mais importantes
 
