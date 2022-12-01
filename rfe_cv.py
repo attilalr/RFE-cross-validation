@@ -22,6 +22,13 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, max_features=None, scoring='accur
 
     assert isinstance(df, pd.DataFrame), 'df must be pandas dataframe'
 
+    if isinstance(var_y, list): 
+      df_ = df[vars_x+var_y].dropna()
+    elif isinstance(var_y, str):
+      df_ = df[vars_x+[var_y]].dropna()
+    else:
+      assert False, 'var_y must be str or list.'
+
     if figs != None:
       fig1 = figs[0]
       fig2 = figs[1]
