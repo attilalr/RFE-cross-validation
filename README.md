@@ -1,54 +1,125 @@
 # RFE-cross-validation
-RFE (Recursive Feature Elimination) with cross validation
 
-RFECV from scikit-learn optimizes the number of best features [1] but is usual the desire to know the selected variables for other cases. The RFE function [2] addresses this issue but is it not cross-validated.
+**Recursive Feature Elimination run inside every cross-validation fold — so you
+can see not just *how many* features to keep, but *which* ones, and how stable
+that choice is.**
 
-A cross-validation for feature importance can give the idea of how a given feature is well established in the feature importance rank. The rank variability is shown by the standard deviation of the rank mean. As the next figure shows: 
+## Motivation
 
-![image](https://user-images.githubusercontent.com/9744889/160865097-9005a1b4-d4f2-4bde-bad6-be07037fe0a7.png)
+scikit-learn gives you two related but incomplete tools:
 
-Figure: Mean rank across folds for each feature.
+- [`RFECV`](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.RFECV.html)
+  cross-validates the **number** of features to keep, but doesn't tell you how
+  stable each individual feature's importance is.
+- [`RFE`](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.RFE.html)
+  ranks the features, but on a **single** fit — with no notion of variability.
 
+`rfe_cv` fills the gap: it runs RFE separately in each CV fold and aggregates
+the per-fold rankings. A feature that is consistently ranked first across folds
+is a robust choice; one whose rank swings wildly is not. That fold-to-fold
+variability is what the shaded band communicates.
 
-## Usage
+![Mean rank across folds for each feature](https://user-images.githubusercontent.com/9744889/160865097-9005a1b4-d4f2-4bde-bad6-be07037fe0a7.png)
+
+*Figure: mean RFE rank across folds for each feature (1 = most important). The
+band shows the fold-to-fold variability of the rank.*
+
+## How it works
+
+1. **Ranking (Figure 1).** For each CV fold, fit `RFE` and record the ranking of
+   every feature. Aggregate across folds into a mean rank (± a band).
+2. **Scoring (Figure 2).** Order features by mean rank, then evaluate a
+   cross-validated `scoring` metric using the top *n* features, for *n* from 1
+   up to `max_features`. This is the classic "score vs. number of features"
+   curve, but built from the cross-validated ranking.
+
+## Install
+
+```bash
+pip install -r requirements.txt
+```
+
+Requires numpy, pandas, scipy, matplotlib and scikit-learn (≥ 1.0).
+
+## Quick start
 
 ```python
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
 from rfe_cv import rfe_cv
 
-res = rfe_cv(df, feature_names, 'target', estimator,
-             cv=5, scoring='r2', max_features=None, std_scaling=False,
-             band='sem', show=True, model_label='my model')
+# df has feature columns plus a target column 'y'
+features = ['x0', 'x1', 'x2', 'x3']
+
+res = rfe_cv(df, features, 'y', RandomForestRegressor(),
+             cv=5, scoring='r2')
 
 res['rank_mean']          # mean RFE rank per feature (1 = best)
-res['rank_std']           # rank variability across folds
+res['rank_std']           # rank std across folds
 res['scores_mean']        # CV score using the n best features
 res['selected_features']  # feature names selected at each step
 res['fig1'], res['fig2']  # the two matplotlib figures
 ```
 
-To overlay several models on the same figures, pass `figs=[res['fig1'], res['fig2']]`
-and `show=False` until the final call. See `example.py`.
+See [`example.py`](example.py) for regression, classification, comparing two
+models on the same axes, and `max_features`.
 
-Install dependencies with `pip install -r requirements.txt`.
+## Parameters
 
-TO-DO:
+| Parameter | Default | Description |
+|---|---|---|
+| `df` | — | pandas DataFrame with the feature and target columns. |
+| `vars_x` | — | list of feature column names. |
+| `var_y` | — | target column name (`str`) or names (`list`). |
+| `estimator` | — | any sklearn estimator exposing `coef_` or `feature_importances_` (required by RFE). |
+| `cv` | `5` | number of folds or a cross-validation splitter. |
+| `max_features` | `None` | highest number of best features in the score curve (default: all). |
+| `scoring` | `'accuracy'` | sklearn scoring metric; must match the estimator (regression vs. classification). |
+| `std_scaling` | `False` | standard-scale features; fitted inside each fold (no leakage). |
+| `band` | `'sem'` | what the shaded band shows — see below. |
+| `figs` | `None` | `[fig1, fig2]` to overlay onto existing figures. |
+| `show` | `True` | draw the legend and call `plt.show()`. |
+| `figsize` | `(8, 4)` | size of newly created figures. |
+| `model_label` | `None` | legend label for this model. |
 
-- ~~Separate module file and example script;~~
-- ~~Prettier output / returning of results (now returns a dict);~~
-- ~~Input parameters for figures;~~
-- ~~Get rid of commentaries in portuguese;~~
-- ~~Return of figures instead of plotting;~~
-- ~~Better check of inputs (types);~~
-- ~~Consistent scaling between selection and scoring (via Pipeline);~~
-- ~~Consider the variability of the std deviation of the mean (`band='sem'|'std'|'none'` + docstring caveat);~~
-- Richer example.
+Returns a `dict` with keys `features`, `rank_mean`, `rank_std`, `scores_mean`,
+`scores_std`, `selected_features`, `fig1`, `fig2`.
 
-The shaded band is controlled by `band`: `'sem'` (Student-t confidence
-interval of the mean, the default), `'std'` (raw fold-to-fold dispersion), or
-`'none'`. With few folds the std estimate is itself noisy (~35% relative error
-at `cv=5`), so read narrow bands with caution — increasing `cv` is the cheapest
-way to tighten it.
+## The shaded band (`band`)
 
-[1] http://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.RFECV.html
+Both figures draw a band around each curve, built from the standard deviation
+across folds. What that band *means* is your choice — and switching costs
+nothing extra, since the std is already computed:
 
-[2] https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.RFE.html
+| `band` | Band represents | Half-width |
+|---|---|---|
+| `'sem'` *(default)* | Student-t confidence interval of the **mean** | `t · s / √n` |
+| `'std'` | raw **fold-to-fold dispersion** | `s` |
+| `'none'` | no band | — |
+
+> ⚠️ With few folds, the std estimate `s` is itself noisy — its relative error
+> is about `1 / √(2(n−1))`, roughly **35% at `cv=5`**. Read narrow bands with
+> caution; increasing `cv` is the cheapest way to tighten them reliably.
+
+## Comparing models on the same figures
+
+Pass the figures from the first call into the next, and keep `show=False` until
+the final model:
+
+```python
+res = rfe_cv(df, features, 'y', model_a, model_label='A', show=False)
+rfe_cv(df, features, 'y', model_b, model_label='B',
+       figs=[res['fig1'], res['fig2']], show=True)
+```
+
+## Roadmap
+
+- [x] Separate module file and example script
+- [x] Return structured results (a dict)
+- [x] Figure parameters (`figsize`, overlay via `figs`)
+- [x] English-only comments
+- [x] Return figures instead of only plotting
+- [x] Input type checks
+- [x] Consistent, leak-free scaling between selection and scoring (Pipeline)
+- [x] Choice of what the band represents (`band`)
+- [ ] Richer example / notebook walkthrough
