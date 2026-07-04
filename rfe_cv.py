@@ -112,7 +112,7 @@ def rfe_cv(df, vars_x, var_y, estimator, cv=5, max_features=None,
     # validate that the scoring matches the estimator (regression vs. classif.)
     try:
         cross_val_score(scoring_estimator, df_[vars_x], y_target,
-                        scoring=scoring, cv=2)
+                        scoring=scoring, cv=2, error_score='raise')
     except Exception as e:
         raise ValueError(
             'Check that the scoring matches the estimator '
